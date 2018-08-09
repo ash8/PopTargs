@@ -1,8 +1,8 @@
-# PopTargs
-# These are the scripts used to create the MySQL database that is used by PopTargs.essex.ac.uk.
-# The pipeline is a long process and scripts may need to be adjusted to fit your file names. 
+# PopTargs #
+These are the scripts used to create the MySQL database that is used by PopTargs.essex.ac.uk.
+The pipeline is a long process and scripts may need to be adjusted to fit your file names. 
 
-# The general pipeline is as follows:
+## The general pipeline is as follows: ##
 
 1)	Get the 3’ UTRs with: “collect_and_clean_3utrs.R”
 2)  Download the mature human miRNA from miRBase.org. Split the fasta file into many small files for parallel SeedVicious runs.
