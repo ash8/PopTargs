@@ -38,20 +38,13 @@ colnames(chrSNPsTEMP) <- c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER",
 # so not so much stored:
 chrSNPs <- 0
 
-# # # take only SNPS in my db:
-# # # Load the full interactions DB
-# # allDB <- read.table("Paper_miRPopGen/CaseStudies_forAbstract/CompleteSetALLINFO_jan18.txt", header = T)    
-# # DBsnps <- unique(allDB[,"snpName"])
-# # # save so only have to load this:
-# # save(DBsnps, file = "Paper_miRPopGen/Population_work/FreshPops/snpNames_from_CompleteDB.Rdata")
-
-
+# To speed up the process:
 ################################
 # # Load the list of all DB snps (called DBsnps)
-# load("Paper_miRPopGen/Population_work/FreshPops/snpNames_from_CompleteDB.Rdata")
+load("snpNames_from_CompleteDB.Rdata")
 
 # FOR THE REV. COMP VERSION!! (change back to other if doing normal)
-load("Paper_miRPopGen/Population_work/FreshPops/snpNames_from_CompleteDB_RevComp.Rdata")
+#load("snpNames_from_CompleteDB_RevComp.Rdata")
 ################################
 
 # Take only those snps in my overall DB:
@@ -65,21 +58,6 @@ newCols <- lapply(as.vector(snpsChrPop[,8]), function(x) strsplit(x, split = ";"
 for(i in 1:(length(newCols[[1]]) - 1)){
    assign(strsplit(newCols[[1]], split = "=")[[i]][1], as.numeric(unlist(lapply(newCols, function(x) strsplit(x, split = "=")[[i]][2]))))
 }
-
-
-# # # to be sure the name is correct, check the "AF", "EAS_AF"... from the string - just in case diff in diff chrs or whatever
-# # if ((strsplit(newCols[[1]], split = "=")[[3]][1] == "AF") & (strsplit(newCols[[1]], split = "=")[[7]][1] == "AMR_AF") & (strsplit(newCols[[1]], split = "=")[[11]][1] == "EAS_AF")){
-# # 
-# #     AF <- as.numeric(unlist(lapply(newCols, function(x) strsplit(x, split = "=")[[3]][2])))
-# #     AMR_AF <- as.numeric(unlist(lapply(newCols, function(x) strsplit(x, split = "=")[[7]][2])))
-# #     AFR_AF <- as.numeric(unlist(lapply(newCols, function(x) strsplit(x, split = "=")[[8]][2])))
-# #     EUR_AF <- as.numeric(unlist(lapply(newCols, function(x) strsplit(x, split = "=")[[9]][2])))
-# #     SAS_AF <- as.numeric(unlist(lapply(newCols, function(x) strsplit(x, split = "=")[[10]][2])))
-# #     EAS_AF <- as.numeric(unlist(lapply(newCols, function(x) strsplit(x, split = "=")[[11]][2])))
-# # 
-# # }else{
-# #     write("*** PROB WITH COLNAMES, SEE SCRIPT ***", stdout())
-# # }
 
 # Re-combine into one db:
 all_SNPpop_freqs <- cbind(snpsChrPop[ ,c("CHROM", "POS", "ID", "REF", "ALT")], AF, AMR_AF, AFR_AF, EUR_AF, SAS_AF, EAS_AF)
