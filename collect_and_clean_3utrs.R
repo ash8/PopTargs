@@ -100,6 +100,7 @@ for (i in 1:length(keep_utrs[,1])) {
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Put it into fasta format and take the reverse complement of '- strand' versions
+### EDIT: oops! dont take rev. complement! 
 
 library("Biostrings")
 
@@ -112,15 +113,16 @@ for (i in 1:length(keep_utrs2[,1])) {
 	                  collapse = "|")
 	# or keep_utrs2[1,2:6] if I dont want to call them specifically.
 	
-	if(keep_utrs2[i,"strand"] == "1") {
+#	if(keep_utrs2[i,"strand"] == "1") {
 		utrs_set<-c(utrs_set, DNAStringSet(keep_utrs2[i,"3utr"]))
 		utrs_set_names<-c(utrs_set_names, newSeqName)
 		
-	}else{
-		utrs_set<-c(utrs_set, 
-					reverseComplement(DNAStringSet(keep_utrs2[i,"3utr"])))
-		utrs_set_names<-c(utrs_set_names, newSeqName)
-	}
+#	}else{
+#		utrs_set<-c(utrs_set, 
+#					reverseComplement(DNAStringSet(keep_utrs2[i,"3utr"])))
+#		utrs_set_names<-c(utrs_set_names, newSeqName)
+#	}
+
 } 
 names(utrs_set)<-utrs_set_names
 
