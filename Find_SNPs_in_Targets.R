@@ -18,6 +18,10 @@
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+# Load libraries
+suppressWarnings(suppressMessages(library(IRanges)))
+
+
 args<-commandArgs(T)
 
 # If not running as bash script, be sure to set the following manually:
@@ -28,12 +32,11 @@ chrNum <- args[1]
 write("*** RETRIEVING SeedVicious DATA ***", stdout())
 
 # Import the output of the SeedVicious parser:
-pathSeedV<- paste("./chr", chrNum ,"/Parser_seedV_miTall_chr", chrNum , 
-						 "_biomartTargs_all.txt", sep = "")
+ pathSeedV<- paste("./chr", chrNum ,"/Parser_seedV_miRall_chr", chrNum , 
+ 						 "_biomartTargs_ALL.txt", sep = "")
 
 seedVic<-read.table(pathSeedV, sep = "\t")					
 
-# for test: seedVic <- read.table("~/Desktop/Parser_seedV_miRall_chr21_biomartTargs_p1.txt", sep = "\t")		
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 write("*** PREPARING SeedVicious DATA ***", stdout())
@@ -66,7 +69,6 @@ single_loc <- seedVic[indexSingle,]
 # Now separate the dataset into 'near Target' and regular and add a column that
 # indicates whether it is a target or a near target (and remove the * from the 
 # targ type)
-
 
 # first take the real targets and add a column indicating their group
 indexT <- grep("*", single_loc[,"type"], fixed = T, invert = T)
@@ -104,7 +106,7 @@ rcSeedV<-seedV[grepl("R", as.vector(seedV[,"tr"])),]
 
 # Get the genomic positions of the target parts
 rcUTRstart <- unlist(lapply(as.vector(rcSeedV[,"tr"]), 
-					function(x) as.numeric(strsplit(x , "|", fixed = T)[[1]][4])))
+					function(x) as.numeric(strsplit(x , "|", fixed = T)[[1]][5])))
 rcTARG_seed_start <- as.numeric(sub("\\).*", "", 
 								sub(".*\\(", "", as.vector(rcSeedV[,"pos"]))))
 # make seed region only the base 6nt inciated in bartel2009 for all targ sites
@@ -133,7 +135,7 @@ nSeedV<-seedV[!grepl("R", as.vector(seedV[,"tr"])),]
 
 # Get the genomic positions of the target parts
 nUTRstart <- unlist(lapply(as.vector(nSeedV[,"tr"]), 
-					function(x) as.numeric(strsplit(x , "|", fixed = T)[[1]][4])))
+					function(x) as.numeric(strsplit(x , "|", fixed = T)[[1]][5])))
 nTARG_seed_start <- as.numeric(as.vector(nSeedV[,"pos"]))
 	# -1 in next two to account for first position index (subtraction stuff...)
 # make seed region only the base 6nt inciated in bartel2009 for all targ sites
@@ -174,8 +176,6 @@ write("*** LOADING SNP DATA ***", stdout())
 SNPs_output <- paste("./chr", chrNum ,"/SNPdb_BiomaRt_chr", chrNum , ".txt", 
 					 sep = "")
 
-# for test: SNPs_output <- "~/Desktop/SNPdb_BiomaRt_chr21.txt"
-
 snp_db <- read.table(SNPs_output, header = T, sep = "\t")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -200,7 +200,6 @@ onlySNPs <- snp_db_single
 # http://stackoverflow.com/questions/3916195/finding-overlap-in-ranges-with-r
 # source("http://bioconductor.org/biocLite.R")  # biocLite("IRanges")
 
-library(IRanges)
 
 write("*** FINDING SNPS THAT ARE IN TARGET REGIONS ***", stdout())
 
@@ -241,6 +240,8 @@ mRNAseq.5.3 <- c()
 utrENSG <- c()
 type <- c()
 ancestAllele <- c()
+###NEW
+strand <- c()
 
 ### First extract info from the 'subjectHits' aka 'targInter' ###
 miRNA <- as.vector(targInter[subjectHits(over)[],"miR"])
@@ -272,12 +273,18 @@ utr3 <- unlist(lapply(utr3_name, function(x)
 				
 # get the utr range out of the name as well (will need this later)	
 utr_range <- unlist(lapply(utr3_name, function(x) 
-					paste(strsplit(x, "|", fixed = T)[[1]][4], ":", 
-					strsplit(x, "|", fixed = T)[[1]][5], sep = "")))
+					paste(strsplit(x, "|", fixed = T)[[1]][5], ":", 
+					strsplit(x, "|", fixed = T)[[1]][6], sep = "")))
 	
 # get the chromosome number:
 chrom <- unlist(lapply(utr3_name, function(x) 
 				strsplit(x, "|", fixed = T)[[1]][3]))
+				
+### NEW!! - also changed the others to have the stand after the chromosome
+# get the UTR STRAND:
+strand <- unlist(lapply(utr3_name, function(x) 
+				strsplit(x, "|", fixed = T)[[1]][4]))
+				
 	
 # to get just the ENSG - for removing duplicates (below)
 utrENSG <- unlist(lapply(utr3_name, function(x) 
@@ -288,7 +295,7 @@ DB_interactions_temp <- data.frame(miRNA, utr3, targ_start, targ_end, chrom,
 								   snpName, snpPos, snpDB_alleles, utr_range, 
 								   snp_minorAllele, snp_minorAlleleFreq, 
 								   ancestAllele, targ_or_nt, type, miRseq.3.5, 
-								   mRNAseq.5.3)
+								   mRNAseq.5.3, strand)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -435,6 +442,7 @@ write("*** FINDING 'NEAR TARGETS' WITH SNPS MAKING THEM REAL TARGETS ***",
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+
 #### PART B: SECTION 1: Reverse complement #####
 
 # First extract the reverse complement accessions
@@ -458,7 +466,9 @@ rcntFrom <- revComp(toupper(rcmR_NTchange))
 
 # Take the nt that it needs to change to to be a target
 rcmiR_NTchange <- substr(rcmiRseq, rcntPos_inSeq, rcntPos_inSeq)
-rcntTo <- revComp(toupper(rcmiR_NTchange))
+# TONI_FIX
+rcntTo <- toupper(rcmiR_NTchange)
+# rcntTo <- revComp(toupper(rcmiR_NTchange))
 			
 # Add the new info to the database	
 rcDB_interactions_ntdiff <- data.frame(rcDB_interactions_nt, rcntPos, rcntFrom, 
@@ -479,6 +489,9 @@ nDB_interactions_nt <- DB_interactions_nt[!grepl("R",
 # Then find the near target mRNA and miRNA seq from seedV output
 nmRseq <- as.vector(nDB_interactions_nt[, "mRNAseq.5.3"])
 nmiRseq <- as.vector(nDB_interactions_nt[, "miRseq.3.5"])
+# TONI_FIX
+strandUTR <- as.vector(nDB_interactions_nt[, "strand"])
+#
 
 # Find the potion of the nt change in the seedV seq output
 nntPos_inSeq <- unlist(lapply(nmRseq, function(x) 
@@ -493,8 +506,13 @@ nntFrom <- toupper(nmR_NTchange)
 nntFrom[nntFrom == "U"] <- "T"   
 				   
 # Take the nt that it needs to change to to be a target
-nmiR_NTchange <- substr(nmiRseq, nntPos_inSeq, nntPos_inSeq)	
+nmiR_NTchange <- substr(nmiRseq, nntPos_inSeq, nntPos_inSeq)
+
 nntTo <- revComp(toupper(nmiR_NTchange))
+# TONI_FIX
+# 
+# nntTo[which(strandUTR=="-1")]<-toupper(nmiR_NTchange[which(strandUTR=="-1")])
+
 	
 # Add the new info to the database	
 nDB_interactions_ntdiff <- data.frame(nDB_interactions_nt, nntPos, nntFrom, 
@@ -518,6 +536,7 @@ DB_interactions_ntdiff <- rbind(rcDB_interactions_ntdiff, nDB_interactions_ntdif
 # Now find which SNPs are in the near target locations
 possibles <- DB_interactions_ntdiff[DB_interactions_ntdiff[, "snpPos"] == 
 									DB_interactions_ntdiff[, "ntPos"],]
+
 rownames(possibles) <- NULL
 
 # First confirm that the major allele is the one from my UTR seq.
@@ -548,20 +567,95 @@ nt_SNP_to_targ <- possibles[allPos,]
 rownames(nt_SNP_to_targ) <- NULL
 # rownames(nt_rejects) <- NULL
 
+
+
+# -------------------
+# TONI_FIX ADD NT-NT pairS
+neartargetpairs <- DB_interactions_ntdiff[!(DB_interactions_ntdiff[, "snpPos"] == DB_interactions_ntdiff[, "ntPos"]),]
+
+rownames(neartargetpairs) <- NULL
+	# First confirm that the major allele is the one from my UTR seq.
+# These may be because of databases with different reference sequences or errors 
+# or reverse SNPs which I will have to deal with (although I have not yet found 
+# any, they are saved here: revSNPs)
+
+ErrorSNPS <- neartargetpairs[unlist(lapply(as.vector(neartargetpairs[,"snpDB_alleles"]), 
+						function(x) ((strsplit(x, split = "/")[[1]][1]))) != 
+						as.vector(neartargetpairs[,"ntFrom"])),]
+
+# To avoid a loop, I am making three logical vectors to check the three possible 
+# positions of the alleles (ex:C/T/A/G) Then combining them and turning NAs to Fs
+# and the extracting the Ts from neartargetpairs. 
+
+pos1 <- unlist(lapply(as.vector(neartargetpairs[,"snpDB_alleles"]), function(x) 
+		((strsplit(x, split = "/")[[1]][2]))) == as.vector(neartargetpairs[,"ntTo"]))
+pos2 <- unlist(lapply(as.vector(neartargetpairs[,"snpDB_alleles"]), function(x) 
+		((strsplit(x, split = "/")[[1]][3]))) == as.vector(neartargetpairs[,"ntTo"]))
+pos3 <- unlist(lapply(as.vector(neartargetpairs[,"snpDB_alleles"]), function(x) 
+		((strsplit(x, split = "/")[[1]][4]))) == as.vector(neartargetpairs[,"ntTo"]))
+allPos <- pos1 | pos2 | pos3
+allPos[is.na(allPos)]<- FALSE
+
+nt_SNP_to_nt <- neartargetpairs[allPos,]
+# nt_rejects <- neartargetpairs[!allPos,]
+
+# Change targ_or_nt to neat target to near target
+nt_SNP_to_nt[,"targ_or_nt"] <- "ntnt"
+
+rownames(nt_SNP_to_nt) <- NULL
+# rownames(nt_rejects) <- NULL
+
+# ----------------------
+
+nt_SNPs <- rbind(nt_SNP_to_targ,nt_SNP_to_nt)
+
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Reorganize the columns to match with PART A
 
-DB_interactions_neartarg_partB <- cbind(nt_SNP_to_targ[,1:16], 
-										nt_SNP_to_targ[,"ntTo"], 
-										nt_SNP_to_targ[,"ntFrom"])
-colnames(DB_interactions_neartarg_partB) <- c(colnames(nt_SNP_to_targ[,1:16]), 
+DB_interactions_neartarg_partB <- cbind(nt_SNPs[,1:17], 
+										nt_SNPs[,"ntTo"], 
+										nt_SNPs[,"ntFrom"])
+colnames(DB_interactions_neartarg_partB) <- c(colnames(nt_SNPs[,1:17]), 
 												"targNT", "refNT")
 
 # Connect the two parts:
 
 DB_interactions_withNT <- rbind(DB_interactions_targ_partA, 
 								DB_interactions_neartarg_partB)
+
+###############################################################################
+### NEW!
+# Flip the negative strand ones (done to avoid confusion and as I have to do 
+# rev and normal anyway)
+
+# Take the two diff types of strand separetly (just do stuff with neg)
+DB_interactions_posSTRAND <- DB_interactions_withNT[!grepl("-1", 
+									DB_interactions_withNT[,"strand"], fixed = T),]
+DB_interactions_negSTRAND <- DB_interactions_withNT[grepl("-1", 
+									DB_interactions_withNT[,"strand"], fixed = T),]
+
+									
+# Take the (R) out of the neg starnd and utr range and put it in those that do not have it
+DB_interactions_negSTRAND_R <- DB_interactions_negSTRAND[grepl("(R)", 
+									DB_interactions_negSTRAND[,"utr_range"], fixed = T),]
+DB_interactions_negSTRAND_newR <- DB_interactions_negSTRAND[!grepl("(R)", 
+									DB_interactions_negSTRAND[,"utr_range"], fixed = T),]
+
+newUTR_R <- noquote(gsub("(R)", "", DB_interactions_negSTRAND_R[,"utr_range"], fixed = T))
+newUTR_newR <- noquote(unlist(lapply(DB_interactions_negSTRAND_newR[,"utr_range"], function(x) paste(x,"(R)", sep = ""))))
+
+
+DB_interactions_negSTRAND_R[ ,"utr_range"] <- newUTR_R
+DB_interactions_negSTRAND_newR[ ,"utr_range"] <- newUTR_newR
+
+# Now put them back together
+
+DB_interactions_Str_fix <- rbind(DB_interactions_posSTRAND, DB_interactions_negSTRAND_R, DB_interactions_negSTRAND_newR)
+
+###############################################################################
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -590,8 +684,15 @@ SNPtargs_output_errorSNPs <- paste("./chr", chrNum ,
 					
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+
+
+
+
+
+
+
 # SAVE the database and error files:
-write.table(DB_interactions_withNT, file = SNPtargs_output, 
+write.table(DB_interactions_Str_fix, file = SNPtargs_output, 
 			sep = "\t", row.names = F, quote = F)
 			
 write.table(revSNPs, file = SNPtargs_output_revSNPs, 
@@ -602,7 +703,6 @@ write.table(ErrorSNPS, file = SNPtargs_output_errorSNPs,
 
 write("*** DONE: CHECK OUTPUT FILES ***", stdout())
 
-# for test: write(SNPs, file = "~/Desktop/data_SNPs_in_miR_targets/chr21/DB_SNPinMiRtargs_chr21.txt")
 
 
 
@@ -616,9 +716,3 @@ write("*** DONE: CHECK OUTPUT FILES ***", stdout())
 
 
 
-
-
-
-
-
-	
